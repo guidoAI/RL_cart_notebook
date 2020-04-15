@@ -19,6 +19,7 @@ import os
 from gym.utils import seeding
 import random
 
+# TODO: Create a new agent class that learns from the rewards it gets for its actions
 
 class random_agent(object):
     """Random agent"""
@@ -126,9 +127,6 @@ class CMC_adapted(cc.MountainCarEnv):
         reward -= math.pow(action[0],2)*0.1
         reward += 1. - self.min_distance / self.max_distance
         
-        # For RL, you can also add your learning algorithm here:
-        # ...
-        
         self.state = (position, velocity)
         return np.array(self.state), reward, done, {}
         
@@ -189,6 +187,8 @@ def run_cart_discrete(agent, simulation_seed=0, n_episodes=1, env=cc.MountainCar
     for i in range(n_episodes):
         ob = env.reset()
         while True:
+            
+            # This is where we pass observations and rewards to the agent:            
             action = agent.act(ob, reward, done)
             ob, reward, done, _ = env.step(action)
             cumulative_reward += reward
