@@ -19,12 +19,67 @@ import os
 from gym.utils import seeding
 import random
 
-# TODO: Create a new agent class that learns from the rewards it gets for its actions
+class Q_learning_agent(object):
+    """Simple Q-learning agent for the MountainCarv0 task
+       https://en.wikipedia.org/wiki/Q-learning
+    """
+
+    n_actions = 3
+
+    def __init__(self, min_speed, max_speed, min_position, max_position, alpha = 0.1, gamma = 0.9, p_explore = 0.1):
+        
+        # number of grids per state variable
+        self.n_grid = 5
+        self.min_speed = min_speed
+        self.max_speed = max_speed
+        self.speed_step = (max_speed - min_speed) / self.n_grid
+        self.min_position = min_position
+        self.max_position = max_position
+        self.position_step = (max_position - min_position) / self.n_grid
+        # discretizing the 2-variable state results in this number of states:
+        self.n_states = int(self.n_grid**2)
+        # make an empty Q-matrix
+        self.Q = np.zeros([self.n_states, self.n_actions])
+        # initialize previous state and action
+        self.previous_state = 0
+        self.previous_action = 0
+        # learning rate
+        self.alpha = alpha
+        self.gamma = gamma
+        self.p_explore = p_explore
+
+    def act(self, observation, reward, done):
+        
+        # Determine the new state:
+        obs_pos = int((observation[0] - self.min_position) // self.n_grid)
+        obs_vel = int((observation[1] - self.min_speed) // self.n_grid)
+        new_state = obs_pos * self.n_grid + obs_vel
+        
+        # Update the Q-matrix:
+        self.Q[self.previous_state, self.previous_action] +=  self.alpha * \
+            (reward + self.gamma * max(self.Q[new_state, :]) - self.Q[self.previous_state, self.previous_action])
+        
+        print(self.Q)
+        
+        # determine the new action:
+        if(random.random() < self.p_explore):
+            action = random.randint(0,2)
+        else:
+            action = np.argmax(self.Q[new_state, :])
+        
+        # update previous state and action
+        self.previous_state = new_state
+        self.previous_action = action        
+        
+        # return the action
+        return action
 
 class random_agent(object):
     """Random agent"""
 
     def act(self, observation, reward, done):
+        print('Observation ' + str(observation))
+        print('Reward = ' + str(reward))
         return random.randint(0,2)
     
 class CMC_original(cc.MountainCarEnv):
@@ -215,5 +270,8 @@ def run_cart_discrete(agent, simulation_seed=0, n_episodes=1, env=cc.MountainCar
     return cumulative_reward;
 
 if __name__ == '__main__':
-    agent = random_agent()
-    reward = run_cart_discrete(agent, simulation_seed=0, env=CMC_original(), graphics=True)
+    env = CMC_original()
+    agent = Q_learning_agent(-env.max_speed, env.max_speed, env.min_position, env.max_position, \
+                             alpha = 0.1, gamma = 0.9, p_explore = 0.1)
+    # agent = random_agent()
+    reward = run_cart_discrete(agent, simulation_seed=0, env=env, graphics=True)
