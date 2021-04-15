@@ -19,84 +19,6 @@ import os
 from gym.utils import seeding
 import random
 
-class Q_learning_agent(object):
-    """Simple Q-learning agent for the MountainCarv0 task
-       https://en.wikipedia.org/wiki/Q-learning
-    """
-
-    n_actions = 3
-
-    def __init__(self, min_speed, max_speed, min_position, max_position, alpha = 0.1, gamma = 0.9, p_explore = 0.1):
-        
-        # number of grids per state variable
-        self.n_grid = 10
-        self.min_speed = min_speed
-        self.max_speed = max_speed
-        self.speed_step = (max_speed - min_speed) / self.n_grid
-        self.min_position = min_position
-        self.max_position = max_position
-        self.position_step = (max_position - min_position) / self.n_grid
-        # discretizing the 2-variable state results in this number of states:
-        self.n_states = int(self.n_grid**2)
-        # make an empty Q-matrix
-        self.Q = np.zeros([self.n_states, self.n_actions])
-        # initialize previous state and action
-        self.previous_state = 0
-        self.previous_action = 0
-        # learning rate
-        self.alpha = alpha
-        self.gamma = gamma
-        self.p_explore = p_explore
-
-    def act(self, observation, reward, done, verbose = False):
-        
-        # Determine the new state:
-        pos = observation[0]
-        if(pos > self.max_position):
-            pos = self.max_position
-        elif(pos < self.min_position):
-            pos = self.min_position
-        obs_pos = int((pos - self.min_position) // self.position_step)
-                
-        vel = observation[1]
-        if(vel > self.max_speed):
-            vel = self.max_speed
-        elif(vel < self.min_speed):
-            vel = self.min_speed
-        obs_vel = int((vel - self.min_speed) // self.speed_step)
-        new_state = obs_pos * self.n_grid + obs_vel
-        
-        if(verbose):
-            print(f'Velocity {observation[1]}, position {observation[0]}, (grid {self.speed_step}, \
-                          {self.position_step}), state = {new_state}')
-        
-        # Update the Q-matrix:
-        self.Q[self.previous_state, self.previous_action] +=  self.alpha * \
-            (reward + self.gamma * max(self.Q[new_state, :]) - self.Q[self.previous_state, self.previous_action])
-        
-        #print(self.Q)
-        
-        # determine the new action:
-        if(random.random() < self.p_explore):
-            action = random.randint(0,2)
-        else:
-            action = np.argmax(self.Q[new_state, :])
-        
-        # update previous state and action
-        self.previous_state = new_state
-        self.previous_action = action        
-        
-        # return the action
-        return action
-
-class random_agent(object):
-    """Random agent"""
-
-    def act(self, observation, reward, done):
-        print('Observation ' + str(observation))
-        print('Reward = ' + str(reward))
-        return random.randint(0,2)
-    
 class CMC_original(cc.MountainCarEnv):
     """ Derived class of Mountain Car, just modified the rendering function.
     """
@@ -155,6 +77,89 @@ class CMC_original(cc.MountainCarEnv):
                 display.clear_output(wait=True)
                 display.display(plt.gcf())
                 time.sleep(sleep_time)
+
+class Q_learning_agent(object):
+    """Simple Q-learning agent for the MountainCarv0 task
+       https://en.wikipedia.org/wiki/Q-learning
+    """
+
+    n_actions = 3
+
+    def __init__(self, min_speed, max_speed, min_position, max_position, alpha = 0.1, gamma = 0.9, p_explore = 0.1):
+        
+        # number of grids per state variable
+        self.n_grid = 10
+        self.min_speed = min_speed
+        self.max_speed = max_speed
+        self.speed_step = (max_speed - min_speed) / self.n_grid
+        self.min_position = min_position
+        self.max_position = max_position
+        self.position_step = (max_position - min_position) / self.n_grid
+        # discretizing the 2-variable state results in this number of states:
+        self.n_states = int(self.n_grid**2)
+        # make an empty Q-matrix
+        self.Q = np.zeros([self.n_states, self.n_actions])
+        #self.Q = np.random.rand(self.n_states, self.n_actions)
+        # initialize previous state and action
+        self.previous_state = 0
+        self.previous_action = 0
+        # learning rate
+        self.alpha = alpha
+        # discount factor:
+        self.gamma = gamma
+        # e-greedy, p_explore results in a random action:
+        self.p_explore = p_explore
+
+    def act(self, observation, reward, done, verbose = False):
+        
+        # Determine the new state:
+        pos = observation[0]
+        if(pos > self.max_position):
+            pos = self.max_position
+        elif(pos < self.min_position):
+            pos = self.min_position
+        obs_pos = int((pos - self.min_position) // self.position_step)
+                
+        vel = observation[1]
+        if(vel > self.max_speed):
+            vel = self.max_speed
+        elif(vel < self.min_speed):
+            vel = self.min_speed
+        obs_vel = int((vel - self.min_speed) // self.speed_step)
+        new_state = obs_pos * self.n_grid + obs_vel
+        
+        if(verbose):
+            print(f'Velocity {observation[1]}, position {observation[0]}, (grid {self.speed_step}, \
+                          {self.position_step}), state = {new_state}')
+        
+        # Update the Q-matrix:
+        self.Q[self.previous_state, self.previous_action] +=  self.alpha * \
+            (reward + self.gamma * max(self.Q[new_state, :]) - self.Q[self.previous_state, self.previous_action])
+        
+        #print(self.Q)
+        
+        # determine the new action:
+        if(random.random() < self.p_explore):
+            action = random.randint(0, self.n_actions-1)
+            #print(f'random action: {action:d}')
+        else:
+            action = np.argmax(self.Q[new_state, :])
+            #print(f'action: {action:d}')
+        
+        # update previous state and action
+        self.previous_state = new_state
+        self.previous_action = action        
+        
+        # return the action
+        return action
+
+class random_agent(object):
+    """Random agent"""
+
+    def act(self, observation, reward, done):
+        print('Observation ' + str(observation))
+        print('Reward = ' + str(reward))
+        return random.randint(0,2)
         
 
 class CMC_adapted(cc.MountainCarEnv):
@@ -195,16 +200,28 @@ class CMC_adapted(cc.MountainCarEnv):
 
         done = bool(position >= self.goal_position and velocity >= self.goal_velocity)
         
+        # ***************
+        # REWARD FUNCTION
+        # ***************
+        
         # Now you can change the reward function here:
-        distance = abs(position - self.goal_position)
-        if(distance < self.min_distance):
-            self.min_distance = distance
-            
-        reward = 0
-        if done:
-            reward = 100.0
-        #reward -= math.pow(action,2)*0.1
-        reward += 1. - distance / (self.max_position - self.min_position)
+        if(not done):
+            reward = -1
+        else:
+            reward = 0.50
+        
+#        # determine the distance to the goal:
+#        distance = abs(position - self.goal_position)
+#        # keep track of the minimal distance during the run:
+#        if(distance < self.min_distance):
+#            self.min_distance = distance
+#        
+#        reward = 0
+#        if done:
+#            reward = 10.0
+#        #reward -= math.pow(action,2)*0.1
+#        reward += 1. - distance / (self.max_position - self.min_position)
+#        reward += 20*abs(velocity)
         
         self.state = (position, velocity)
         return np.array(self.state), reward, done, {}
@@ -248,7 +265,9 @@ class CMC_adapted(cc.MountainCarEnv):
                 display.display(plt.gcf())
                 time.sleep(sleep_time)
 
-def run_cart_discrete(agent, simulation_seed=0, n_episodes=1, env=cc.MountainCarEnv(), max_steps = 1000, graphics=False):
+def run_cart_discrete(agent, simulation_seed=0, n_episodes=1, env=cc.MountainCarEnv(), \
+                      max_steps = 200, graphics=False, verbose=False, \
+                      random_initial_state=False, finished_at_goal=True):
     """ Runs the discrete cart problem, with the agent mapping observations to actions 
         - agent: should implement a method act(observation, reward, done)
         - simulation_seed: used to set the random seed for simulation
@@ -258,51 +277,119 @@ def run_cart_discrete(agent, simulation_seed=0, n_episodes=1, env=cc.MountainCar
     """
     
     env.seed(simulation_seed)
-
-    reward = 0
+    random.seed(simulation_seed)
     cumulative_reward = 0
-    done = False
-    step = 0
+    rewards = []
 
     for i in range(n_episodes):
+        # reset the environment
         ob = env.reset()
+        if(verbose):
+            print(f'Episode {i}: cumulative reward = {cumulative_reward}')
+        step = 0        
+        done = False # true if the car reached the goal
+        finished = False # true if we want to stop this episode
+        reward = 0
+        
+        if random_initial_state:    
+            # select a random velocity and position:
+            position = env.min_position + random.random() * (env.max_position - env.min_position)
+            velocity = -env.max_speed + random.random() * 2 * env.max_speed
+            env.state = (position, velocity)
+            
         while True:
             
             # This is where we pass observations and rewards to the agent:            
             action = agent.act(ob, reward, done)
             ob, reward, done, _ = env.step(action)
+            if(verbose):
+                print(f'{reward}, ', end='')
+            rewards.append(reward)
             cumulative_reward += reward
             step += 1
+#            if(done):
+#                # process the final successful action and high reward:
+#                action = agent.act(ob, reward, done)
+#                # agent succeeded in the task, restart:
+#                ob = env.reset()
+#                # make sure done = false
+#                done = False
+            if(finished_at_goal and done):
+                finished = True
+                if(verbose):
+                    print(f'Episode {i}: Success!')
             if(step >= max_steps):
-                done = True
+                finished = True
             if(graphics):
                 env.render()
-            if done:
+            if finished:
                 break
 
     env.close()    
     
-    return cumulative_reward;
+    return cumulative_reward, np.asarray(rewards);
 
 if __name__ == '__main__':
+    
+    np.random.seed(0)
+    
     #env = CMC_original()
     env = CMC_adapted()
     
-    # Train with purely random actions:
-    agent = Q_learning_agent(-0.025, 0.025, env.min_position, env.max_position, \
-                             alpha = 0.1, gamma = 0.9, p_explore = 1.0)
-    
     # agent = random_agent()
-    steps_training = 2000
-    reward_train = run_cart_discrete(agent, simulation_seed=0, env=env, graphics=True, max_steps=steps_training)
     
+    # Train with purely random actions:
+    max_velocity = env.max_speed
+    min_velocity = -max_velocity
+    agent = Q_learning_agent(min_velocity, max_velocity, env.min_position, env.max_position, \
+                             alpha = 0.05, gamma = 0.95, p_explore = 0.01)
+
     print('Q-matrix:')
     print(agent.Q)
     
+    # put the agent at different positions and velocities:
+    n_episodes = 1000
+    steps_training = 200
+    # training_samples = n_episodes * steps_training
+    
+    # (1) off-policy learning
+    agent.p_explore = 1
+    agent.alpha = 0.25
+    reward_train, rewards_training = run_cart_discrete(agent, simulation_seed=0, env=env, graphics=False, \
+                                                       max_steps=steps_training, n_episodes=n_episodes, random_initial_state=False)
+    print('Q-matrix:')
+    print(agent.Q)
+       
+    # (2) learning under many different initial conditions
+    agent.p_explore = 0.10
+    agent.alpha = 0.10
+    reward_train, rewards_training = run_cart_discrete(agent, simulation_seed=0, env=env, graphics=False, \
+                                                       max_steps=steps_training, n_episodes=n_episodes, random_initial_state=True)
+    print('Q-matrix:')
+    print(agent.Q)
+     
+    # (3) Learning from the start position:
+    agent.explore = 0.05
+    agent.alpha = 0.05
+    reward_train, rewards_training = run_cart_discrete(agent, simulation_seed=0, env=env, graphics=False, \
+                                                       max_steps=steps_training, n_episodes=n_episodes, random_initial_state=False)
+    print('Q-matrix:')
+    print(agent.Q)
+    
+    plt.figure()
+    plt.plot(rewards_training)
+    plt.show()
+    
     #Test the agent:
-    steps_testing = 1000
+    steps_testing = 200
     agent.alpha = 0.0 # learning rate
     agent.p_explore = 0.0 # exploration probability
-    reward_test = run_cart_discrete(agent, simulation_seed=0, env=env, graphics=True, max_steps=steps_testing)
+    reward_test, rewards_test = run_cart_discrete(agent, simulation_seed=1, env=env, graphics=True, max_steps=steps_testing, random_initial_state=True)
     
     print(f'Training reward: {reward_train*(steps_testing/steps_training):5.3f}, Test reward: {reward_test:5.3f}')
+    
+    plt.figure()
+    plt.plot(rewards_test)
+    plt.show()
+    
+    
