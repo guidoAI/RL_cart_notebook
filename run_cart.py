@@ -333,63 +333,26 @@ if __name__ == '__main__':
     
     np.random.seed(0)
     
-    #env = CMC_original()
-    env = CMC_adapted()
-    
-    # agent = random_agent()
-    
-    # Train with purely random actions:
+    env=CMC_original()
+
+    # set up off-policy learning with p_explore = 1
     max_velocity = env.max_speed
     min_velocity = -max_velocity
     agent = Q_learning_agent(min_velocity, max_velocity, env.min_position, env.max_position, \
-                             alpha = 0.05, gamma = 0.95, p_explore = 0.01)
-
-    print('Q-matrix:')
-    print(agent.Q)
-    
-    # put the agent at different positions and velocities:
+                             alpha = 0.20, gamma = 0.95, p_explore = 1.0)
     n_episodes = 1000
-    steps_training = 200
-    # training_samples = n_episodes * steps_training
+    reward, rewards = run_cart_discrete(agent, env=env, graphics=False, n_episodes=n_episodes)
+    print('Reward per episode = ' + str(reward / n_episodes))
     
-    # (1) off-policy learning
-    agent.p_explore = 1
-    agent.alpha = 0.25
-    reward_train, rewards_training = run_cart_discrete(agent, simulation_seed=0, env=env, graphics=False, \
-                                                       max_steps=steps_training, n_episodes=n_episodes, random_initial_state=False)
-    print('Q-matrix:')
-    print(agent.Q)
-       
-    # (2) learning under many different initial conditions
-    agent.p_explore = 0.10
-    agent.alpha = 0.10
-    reward_train, rewards_training = run_cart_discrete(agent, simulation_seed=0, env=env, graphics=False, \
-                                                       max_steps=steps_training, n_episodes=n_episodes, random_initial_state=True)
-    print('Q-matrix:')
-    print(agent.Q)
-     
-    # (3) Learning from the start position:
-    agent.explore = 0.05
+    # on-policy now with e-greedy
+    agent.p_explore = 0.05
+    reward, rewards = run_cart_discrete(agent, env=env, graphics=False, n_episodes=n_episodes)
+    print('Reward per episode = ' + str(reward / n_episodes))
+    
+    n_episodes = 100
     agent.alpha = 0.05
-    reward_train, rewards_training = run_cart_discrete(agent, simulation_seed=0, env=env, graphics=False, \
-                                                       max_steps=steps_training, n_episodes=n_episodes, random_initial_state=False)
-    print('Q-matrix:')
-    print(agent.Q)
-    
-    plt.figure()
-    plt.plot(rewards_training)
-    plt.show()
-    
-    #Test the agent:
-    steps_testing = 200
-    agent.alpha = 0.0 # learning rate
-    agent.p_explore = 0.0 # exploration probability
-    reward_test, rewards_test = run_cart_discrete(agent, simulation_seed=1, env=env, graphics=True, max_steps=steps_testing, random_initial_state=True)
-    
-    print(f'Training reward: {reward_train*(steps_testing/steps_training):5.3f}, Test reward: {reward_test:5.3f}')
-    
-    plt.figure()
-    plt.plot(rewards_test)
-    plt.show()
-    
+    agent.p_explore = 0.02
+    reward, rewards = run_cart_discrete(agent, env=env, graphics=False, n_episodes=n_episodes)
+    print('Reward per episode = ' + str(reward / n_episodes))
+
     
