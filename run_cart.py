@@ -19,6 +19,9 @@ import os
 from gym.utils import seeding
 import random
 
+# import gym
+# print(f'Gym version {gym.__version__}')
+
 class CMC_original(cc.MountainCarEnv):
     """ Derived class of Mountain Car, just modified the rendering function.
     """
@@ -355,4 +358,9 @@ if __name__ == '__main__':
     reward, rewards = run_cart_discrete(agent, env=env, graphics=False, n_episodes=n_episodes)
     print('Reward per episode = ' + str(reward / n_episodes))
 
+    n_episodes = 1
+    agent.alpha = 0
+    agent.p_explore = 0
+    reward, rewards = run_cart_discrete(agent, env=env, graphics=True, n_episodes=n_episodes)
+    print(f'Reward: {reward}')
     
